@@ -1,0 +1,37 @@
+name: Update AQI Data
+
+on:
+  schedule:
+    - cron: "0 6 * * *"  # runs every day at 6 AM UTC
+  workflow_dispatch:      # allows manual trigger
+
+jobs:
+  update-aqi:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Run AQI Forecast Script
+      env:
+        OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+      run: |
+        python AQI-Forecast/aqi_forecast.py
+
+    - name: Commit and Push Results
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git add -A
+        git commit -m "Updated AQI data" || echo "No changes to commit"
+        git push
