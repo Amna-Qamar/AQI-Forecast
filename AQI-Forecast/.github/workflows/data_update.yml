@@ -1,0 +1,41 @@
+name: Update AQI Data
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # Every day at 6 AM UTC
+  workflow_dispatch:      # Manual trigger (you can run manually)
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install -r AQI-Forecast/requirements.txt
+
+      - name: Run data pipeline
+        env:
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+        run: python AQI-Forecast/data_pipeline.py
+
+      - name: Train model
+        run: python AQI-Forecast/train_model.py
+
+      - name: Run prediction
+        run: python AQI-Forecast/predict_aqi.py
+
+      - name: Commit & Push results
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add AQI-Forecast/data/latest_data.csv AQI-Forecast/data/predicted_aqi.csv
+          git commit -m "Auto update AQI data"
+          git push
